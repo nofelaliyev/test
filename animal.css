@@ -1,0 +1,56 @@
+*{
+    box-sizing: border-box;
+}
+
+html, body{
+    height: 100%;
+    margin: 0;
+    background-color: rgb(180, 179, 179);
+    background-image: url("https://bizplus.az/wp-content/uploads/2017/11/bg.png");
+    background-size: cover;
+}
+
+.header{
+    width: 100%;
+    height: 50px;
+    background-color:black;
+    text-align: center;
+    padding: auto;
+    color: white;
+    font-weight: bold;
+    font-size: 44px;
+}
+.post{
+    border: 3px solid black;
+    border-radius: 5px;
+    padding: 5px;
+    width: 610px;
+    padding: 0;
+    margin: 10px;
+    text-align: justify;
+    float: left;
+}
+
+.text{
+    color: black;
+    font-weight: bolder;
+    padding: 3px;
+}
+.basliq{
+    font-size: 25px;
+    color: red;
+}
+
+.clearfix {
+    overflow: auto;
+    padding: 0;
+    margin: 10px;
+  }
+  
+.img2 {
+    float: left;
+    height: 200px;
+    width: 200px;
+    margin: 5px;
+    border-radius: 3px;
+  }
