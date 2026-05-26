@@ -125,6 +125,11 @@ function loadDashboard() {
   const link = location.origin + location.pathname + '#u/' + session.username;
   document.getElementById('share-link').textContent = link;
 
+  const si = document.getElementById('search-input');
+  const sr = document.getElementById('search-results');
+  if (si) si.value = '';
+  if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
+
   renderMessages('all');
   updateBadge(unread.length);
 }
@@ -286,6 +291,48 @@ function sendMessage() {
     document.getElementById('send-form-area').style.display = 'block';
     document.getElementById('send-success').style.display   = 'none';
   }, 3000);
+}
+
+// ---------- SEARCH ----------
+function searchUsers(query) {
+  const session = DB.session;
+  const results = document.getElementById('search-results');
+  const q = query.trim().toLowerCase();
+
+  if (!q) {
+    results.style.display = 'none';
+    results.innerHTML = '';
+    return;
+  }
+
+  const users = DB.users;
+  const matches = Object.values(users).filter(u => {
+    if (u.username === session.username) return false;
+    return u.name.toLowerCase().includes(q) || u.username.includes(q);
+  });
+
+  results.style.display = 'block';
+
+  if (!matches.length) {
+    results.innerHTML = `
+      <div class="search-empty">
+        <span>😕</span> "<strong>${escHtml(query)}</strong>" üzrə nəticə tapılmadı
+      </div>`;
+    return;
+  }
+
+  results.innerHTML = matches.map(u => `
+    <div class="search-user-card">
+      <div class="search-avatar">${u.name[0].toUpperCase()}</div>
+      <div class="search-info">
+        <div class="search-name">${escHtml(u.name)}</div>
+        <div class="search-handle">@${escHtml(u.username)}</div>
+      </div>
+      <a href="#u/${escHtml(u.username)}" class="btn btn-primary btn-sm">
+        📨 Mesaj göndər
+      </a>
+    </div>
+  `).join('');
 }
 
 // ---------- SHARE ----------
