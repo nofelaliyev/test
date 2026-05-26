@@ -1,0 +1,340 @@
+// ========================
+//  SirSual — Core App Logic
+// ========================
+
+const DB = {
+  get users()    { return JSON.parse(localStorage.getItem('ss_users') || '{}'); },
+  get messages() { return JSON.parse(localStorage.getItem('ss_messages') || '[]'); },
+  get session()  { return JSON.parse(localStorage.getItem('ss_session') || 'null'); },
+
+  saveUsers(u)    { localStorage.setItem('ss_users', JSON.stringify(u)); },
+  saveMessages(m) { localStorage.setItem('ss_messages', JSON.stringify(m)); },
+  saveSession(s)  { localStorage.setItem('ss_session', JSON.stringify(s)); },
+  clearSession()  { localStorage.removeItem('ss_session'); },
+};
+
+// ---------- ROUTER ----------
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function route() {
+  const hash = location.hash.replace('#', '') || '';
+  const session = DB.session;
+
+  if (hash.startsWith('u/')) {
+    const username = hash.slice(2);
+    loadSendPage(username);
+    showPage('page-send');
+    return;
+  }
+
+  if (session) {
+    loadDashboard();
+    showPage('page-dashboard');
+  } else {
+    showPage('page-auth');
+  }
+}
+
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+
+// ---------- AUTH ----------
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`form-${tab}`).classList.add('active');
+}
+
+function register() {
+  const name     = document.getElementById('reg-name').value.trim();
+  const username = document.getElementById('reg-username').value.trim().toLowerCase();
+  const password = document.getElementById('reg-password').value;
+
+  clearErrors();
+
+  let valid = true;
+  if (!name)     { showError('reg-name-err', 'Ad daxil edin'); valid = false; }
+  if (!username) { showError('reg-username-err', 'İstifadəçi adı daxil edin'); valid = false; }
+  if (username && !/^[a-z0-9_]{3,20}$/.test(username)) {
+    showError('reg-username-err', 'Yalnız hərf, rəqəm, alt xətt (3-20 simvol)'); valid = false;
+  }
+  if (!password || password.length < 6) {
+    showError('reg-password-err', 'Şifrə ən azı 6 simvol olmalıdır'); valid = false;
+  }
+
+  if (!valid) return;
+
+  const users = DB.users;
+  if (users[username]) {
+    showError('reg-username-err', 'Bu istifadəçi adı artıq mövcuddur'); return;
+  }
+
+  users[username] = { name, username, password, createdAt: new Date().toISOString() };
+  DB.saveUsers(users);
+  DB.saveSession({ username, name });
+  toast('Qeydiyyat uğurlu oldu! Xoş gəldiniz 🎉', 'success');
+  location.hash = '';
+  route();
+}
+
+function login() {
+  const username = document.getElementById('login-username').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+
+  clearErrors();
+
+  const users = DB.users;
+  if (!users[username] || users[username].password !== password) {
+    showError('login-err', 'İstifadəçi adı və ya şifrə yanlışdır');
+    return;
+  }
+
+  DB.saveSession({ username, name: users[username].name });
+  toast('Xoş gəldiniz, ' + users[username].name + '!', 'success');
+  location.hash = '';
+  route();
+}
+
+function logout() {
+  DB.clearSession();
+  toast('Çıxış edildi');
+  location.hash = '';
+  route();
+}
+
+// ---------- DASHBOARD ----------
+function loadDashboard() {
+  const session  = DB.session;
+  const messages = DB.messages.filter(m => m.to === session.username);
+  const unread   = messages.filter(m => !m.read);
+  const total    = messages.length;
+
+  document.getElementById('nav-username').textContent = session.name;
+  document.getElementById('nav-avatar').textContent   = session.name[0].toUpperCase();
+  document.getElementById('db-greeting').textContent  = 'Salam, ' + session.name + '! 👋';
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-unread').textContent  = unread.length;
+  document.getElementById('stat-today').textContent   = todayCount(messages);
+
+  const link = location.origin + location.pathname + '#u/' + session.username;
+  document.getElementById('share-link').textContent = link;
+
+  renderMessages('all');
+  updateBadge(unread.length);
+}
+
+function todayCount(msgs) {
+  const today = new Date().toDateString();
+  return msgs.filter(m => new Date(m.createdAt).toDateString() === today).length;
+}
+
+function updateBadge(n) {
+  const badge = document.getElementById('unread-badge');
+  if (n > 0) {
+    badge.textContent = n;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderMessages(filter) {
+  const session  = DB.session;
+  const all      = DB.messages
+    .filter(m => m.to === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  let filtered = all;
+  if (filter === 'unread') filtered = all.filter(m => !m.read);
+  if (filter === 'read')   filtered = all.filter(m => m.read);
+
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.filter === filter);
+  });
+
+  const container = document.getElementById('messages-container');
+  container.innerHTML = '';
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">💌</div>
+        <p>${filter === 'all'
+          ? 'Hələ heç bir mesajınız yoxdur.<br>Linkini paylaş, mesajlar gəlsin!'
+          : filter === 'unread'
+          ? 'Oxunmamış mesaj yoxdur.'
+          : 'Oxunmuş mesaj yoxdur.'
+        }</p>
+      </div>`;
+    return;
+  }
+
+  filtered.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = 'message-card' + (msg.read ? '' : ' unread');
+    div.innerHTML = `
+      <div class="message-text">${escHtml(msg.text)}</div>
+      <div class="message-meta">
+        <span class="message-time">🕐 ${timeAgo(msg.createdAt)}${msg.read ? '' : ' · <strong style="color:var(--secondary)">Yeni</strong>'}</span>
+        <div class="message-actions">
+          ${!msg.read ? `<button class="btn btn-sm btn-outline" onclick="markRead('${msg.id}')">Oxundu işarələ</button>` : ''}
+          <button class="btn btn-sm btn-ghost" onclick="confirmDelete('${msg.id}')">Sil</button>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function markRead(id) {
+  const messages = DB.messages;
+  const msg = messages.find(m => m.id === id);
+  if (msg) { msg.read = true; DB.saveMessages(messages); }
+  loadDashboard();
+  toast('Oxundu kimi işarələndi', 'success');
+}
+
+function markAllRead() {
+  const session  = DB.session;
+  const messages = DB.messages.map(m => {
+    if (m.to === session.username) m.read = true;
+    return m;
+  });
+  DB.saveMessages(messages);
+  loadDashboard();
+  toast('Bütün mesajlar oxundu kimi işarələndi', 'success');
+}
+
+let deleteTargetId = null;
+
+function confirmDelete(id) {
+  deleteTargetId = id;
+  document.getElementById('modal-delete').classList.add('open');
+}
+
+function closeDeleteModal() {
+  deleteTargetId = null;
+  document.getElementById('modal-delete').classList.remove('open');
+}
+
+function deleteMessage() {
+  if (!deleteTargetId) return;
+  const messages = DB.messages.filter(m => m.id !== deleteTargetId);
+  DB.saveMessages(messages);
+  closeDeleteModal();
+  loadDashboard();
+  toast('Mesaj silindi');
+}
+
+// ---------- SEND PAGE ----------
+function loadSendPage(username) {
+  const users = DB.users;
+  const user  = users[username];
+
+  document.getElementById('send-not-found').style.display = user ? 'none' : 'block';
+  document.getElementById('send-form-area').style.display = user ? 'block' : 'none';
+
+  if (!user) return;
+
+  document.getElementById('send-avatar').textContent = user.name[0].toUpperCase();
+  document.getElementById('send-name').textContent   = user.name;
+  document.getElementById('send-handle').textContent = '@' + username;
+  document.getElementById('send-target').value = username;
+  document.getElementById('send-text').value   = '';
+  document.getElementById('send-charcount').textContent = '0 / 500';
+}
+
+function updateCharCount() {
+  const ta  = document.getElementById('send-text');
+  const cnt = document.getElementById('send-charcount');
+  const n   = ta.value.length;
+  cnt.textContent = n + ' / 500';
+  cnt.className = 'char-counter' + (n > 450 ? ' danger' : n > 350 ? ' warn' : '');
+}
+
+function sendMessage() {
+  const to   = document.getElementById('send-target').value;
+  const text = document.getElementById('send-text').value.trim();
+
+  if (!text) { showError('send-err', 'Mesaj boş ola bilməz'); return; }
+  if (text.length > 500) { showError('send-err', 'Mesaj 500 simvoldan çox ola bilməz'); return; }
+
+  clearErrors();
+
+  const messages = DB.messages;
+  messages.push({
+    id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    to,
+    text,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+  DB.saveMessages(messages);
+
+  document.getElementById('send-text').value = '';
+  document.getElementById('send-charcount').textContent = '0 / 500';
+
+  document.getElementById('send-form-area').style.display  = 'none';
+  document.getElementById('send-success').style.display    = 'block';
+
+  setTimeout(() => {
+    document.getElementById('send-form-area').style.display = 'block';
+    document.getElementById('send-success').style.display   = 'none';
+  }, 3000);
+}
+
+// ---------- SHARE ----------
+function copyShareLink() {
+  const link = document.getElementById('share-link').textContent;
+  navigator.clipboard.writeText(link).then(() => toast('Link kopyalandı! 🔗', 'success'));
+}
+
+// ---------- UTILS ----------
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+function timeAgo(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)        return 'Az əvvəl';
+  if (diff < 3600)      return Math.floor(diff/60) + ' dəq əvvəl';
+  if (diff < 86400)     return Math.floor(diff/3600) + ' saat əvvəl';
+  if (diff < 604800)    return Math.floor(diff/86400) + ' gün əvvəl';
+  return new Date(iso).toLocaleDateString('az-AZ');
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.classList.add('show'); }
+}
+
+function clearErrors() {
+  document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
+}
+
+function toast(msg, type = '') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = (type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️') + ' ' + msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const active = document.querySelector('.page.active');
+    if (active?.id === 'page-auth') {
+      const activeTab = document.querySelector('.auth-tab.active')?.dataset.tab;
+      if (activeTab === 'login')    login();
+      if (activeTab === 'register') register();
+    }
+  }
+});

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SirSual — Anonim Suallar</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Dostlarınıza anonim mesaj və suallar göndərin!">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+  <div class="logo">🌀 SirSual</div>
+  <div class="nav-actions" id="nav-actions">
+    <!-- Filled by JS -->
+  </div>
+</nav>
+
+<!-- ===== PAGE: AUTH ===== -->
+<div class="page active" id="page-auth">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-icon">🌀</div>
+      <h1>SirSual</h1>
+      <p>Dostlarına anonim suallar göndər, onların da suallarını al.<br>Tamamilə gizli, tamamilə əyləncəli!</p>
+
+      <div class="card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login" onclick="switchTab('login')">Giriş</button>
+          <button class="auth-tab" data-tab="register" onclick="switchTab('register')">Qeydiyyat</button>
+        </div>
+
+        <!-- Login Form -->
+        <div class="auth-form active" id="form-login">
+          <div class="form-group">
+            <label>İstifadəçi adı</label>
+            <input type="text" id="login-username" placeholder="istifadeci_adi" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>Şifrə</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div id="login-err" class="form-error"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="login()">
+            🔐 Daxil ol
+          </button>
+        </div>
+
+        <!-- Register Form -->
+        <div class="auth-form" id="form-register">
+          <div class="form-group">
+            <label>Adınız</label>
+            <input type="text" id="reg-name" placeholder="Əli Məmmədov" autocomplete="name">
+            <div id="reg-name-err" class="form-error"></div>
+          </div>
+          <div class="form-group">
+            <label>İstifadəçi adı</label>
+            <input type="text" id="reg-username" placeholder="ali_mammadov" autocomplete="username">
+            <div id="reg-username-err" class="form-error"></div>
+          </div>
+          <div class="form-group">
+            <label>Şifrə</label>
+            <input type="password" id="reg-password" placeholder="Ən azı 6 simvol" autocomplete="new-password">
+            <div id="reg-password-err" class="form-error"></div>
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="register()">
+            🚀 Qeydiyyatdan keç
+          </button>
+        </div>
+      </div>
+
+      <p style="margin-top:20px;font-size:13px;color:var(--text-light)">
+        Qeydiyyatdan keçdikdən sonra öz linkinizi paylaşın və anonim mesajlar alın!
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: DASHBOARD ===== -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard">
+
+    <div class="dashboard-header">
+      <h2 id="db-greeting">Salam!</h2>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="position:relative">
+          <span id="unread-badge" class="badge" style="display:none;position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;display:none;align-items:center;justify-content:center;font-size:11px;border-radius:20px"></span>
+        </span>
+        <button class="btn btn-outline btn-sm" onclick="markAllRead()">Hamısını oxu</button>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Cəmi mesaj</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-unread">0</div>
+        <div class="stat-label">Oxunmamış</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-today">0</div>
+        <div class="stat-label">Bu gün</div>
+      </div>
+    </div>
+
+    <!-- Share Box -->
+    <div class="share-box">
+      <div>
+        <h3>🔗 Linkini paylaş</h3>
+        <p>Dostlarına bu linki göndər, anonim mesaj alsın!</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <div class="share-link" id="share-link" onclick="copyShareLink()" title="Kopyalamaq üçün tıkla">
+          yüklənir...
+        </div>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.25);color:white;border:1.5px solid rgba(255,255,255,0.4)" onclick="copyShareLink()">
+          📋 Kopyala
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="section-title">
+      💬 Mesajlarım
+      <span class="badge" id="unread-badge-2">0</span>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all"    onclick="renderMessages('all')">Hamısı</button>
+      <button class="filter-tab"        data-filter="unread" onclick="renderMessages('unread')">Oxunmamış</button>
+      <button class="filter-tab"        data-filter="read"   onclick="renderMessages('read')">Oxunmuş</button>
+    </div>
+
+    <div class="messages-list" id="messages-container">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: SEND (public profile) ===== -->
+<div class="page" id="page-send">
+  <div class="send-page">
+    <div class="send-card">
+
+      <!-- Not found -->
+      <div id="send-not-found" style="display:none;text-align:center" class="card">
+        <div style="font-size:48px;margin-bottom:12px">😔</div>
+        <h2>İstifadəçi tapılmadı</h2>
+        <p style="color:var(--text-light);margin:8px 0 20px">Bu istifadəçi adı mövcud deyil.</p>
+        <a href="#" class="btn btn-primary">Ana səhifəyə qayıt</a>
+      </div>
+
+      <!-- Send form -->
+      <div id="send-form-area" style="display:none">
+        <div class="card">
+          <div class="profile-header">
+            <div class="avatar-lg" id="send-avatar">?</div>
+            <h2 id="send-name">İstifadəçi</h2>
+            <p id="send-handle">@istifadeci</p>
+          </div>
+
+          <input type="hidden" id="send-target">
+
+          <div class="form-group">
+            <label>Anonim mesajınız</label>
+            <textarea
+              id="send-text"
+              placeholder="Buraya mesajınızı yazın... Kimliyiniz gizli qalacaq 🤫"
+              maxlength="500"
+              oninput="updateCharCount()"
+            ></textarea>
+            <div class="char-counter" id="send-charcount">0 / 500</div>
+            <div id="send-err" class="form-error"></div>
+          </div>
+
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="sendMessage()">
+            📨 Anonim göndər
+          </button>
+
+          <p style="text-align:center;font-size:12px;color:var(--text-light);margin-top:12px">
+            Mesajınız tamamilə anonimdir. Heç kim kimliğinizi bilməyəcək.
+          </p>
+        </div>
+
+        <div style="text-align:center;margin-top:16px">
+          <p style="font-size:13px;color:var(--text-light);margin-bottom:8px">Siz də öz profilinizi yaradın!</p>
+          <a href="#" class="btn btn-outline">🌀 SirSual-a qoşul</a>
+        </div>
+      </div>
+
+      <!-- Success state -->
+      <div id="send-success" style="display:none;text-align:center" class="card">
+        <div style="font-size:56px;margin-bottom:12px;animation:float 2s ease-in-out infinite">🎉</div>
+        <h2 style="margin-bottom:8px">Mesaj göndərildi!</h2>
+        <p style="color:var(--text-light)">Mesajınız uğurla çatdırıldı. Kimliğiniz gizli qalacaq.</p>
+        <div style="margin-top:16px;width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));animation:progress 3s linear forwards"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal">
+    <h3>Mesajı sil?</h3>
+    <p>Bu mesaj birdəfəlik silinəcək. Bu əməliyyatı geri qaytarmaq olmaz.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Ləğv et</button>
+      <button class="btn btn-danger" onclick="deleteMessage()">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<style>
+@keyframes progress {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+</style>
+
+<script src="app.js"></script>
+<script>
+  // Dynamically update navbar based on session
+  function updateNavbar() {
+    const session = JSON.parse(localStorage.getItem('ss_session') || 'null');
+    const nav = document.getElementById('nav-actions');
+    if (session) {
+      nav.innerHTML = `
+        <div class="nav-user">
+          <div class="avatar-sm" id="nav-avatar">${session.name[0].toUpperCase()}</div>
+          <span id="nav-username">${session.name}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
+      `;
+    } else {
+      nav.innerHTML = `
+        <button class="btn btn-outline btn-sm" onclick="switchTab('login');showPage('page-auth')">Giriş</button>
+        <button class="btn btn-primary btn-sm" onclick="switchTab('register');showPage('page-auth')">Qeydiyyat</button>
+      `;
+    }
+  }
+
+  const _origRoute = route;
+  window.route = function() {
+    updateNavbar();
+    _origRoute();
+  };
+
+  updateNavbar();
+</script>
+</body>
+</html>
