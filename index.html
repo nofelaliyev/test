@@ -376,37 +376,5 @@
 </style>
 
 <script src="app.js"></script>
-<script>
-  // Dynamically update navbar based on session
-  function updateNavbar() {
-    const session = JSON.parse(localStorage.getItem('ss_session') || 'null');
-    const nav = document.getElementById('nav-actions');
-    if (session) {
-      const users  = JSON.parse(localStorage.getItem('ss_users') || '{}');
-      const user   = users[session.username] || {};
-      const avatar = user.emoji || session.name[0].toUpperCase();
-      nav.innerHTML = `
-        <div class="nav-user">
-          <div class="avatar-sm" id="nav-avatar">${avatar}</div>
-          <span id="nav-username">${session.name}</span>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
-      `;
-    } else {
-      nav.innerHTML = `
-        <button class="btn btn-outline btn-sm" onclick="switchTab('login');showPage('page-auth')">Giriş</button>
-        <button class="btn btn-primary btn-sm" onclick="switchTab('register');showPage('page-auth')">Qeydiyyat</button>
-      `;
-    }
-  }
-
-  const _origRoute = route;
-  window.route = function() {
-    updateNavbar();
-    _origRoute();
-  };
-
-  updateNavbar();
-</script>
 </body>
 </html>

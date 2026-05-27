@@ -22,6 +22,29 @@ function userAvatar(user) {
   return user.emoji || (user.name ? user.name[0].toUpperCase() : '?');
 }
 
+// ---------- NAVBAR ----------
+function updateNavbar() {
+  const session = DB.session;
+  const nav = document.getElementById('nav-actions');
+  if (!nav) return;
+  if (session) {
+    const user   = DB.users[session.username] || {};
+    const avatar = user.emoji || session.name[0].toUpperCase();
+    nav.innerHTML = `
+      <div class="nav-user">
+        <div class="avatar-sm" id="nav-avatar">${avatar}</div>
+        <span id="nav-username">${session.name}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
+    `;
+  } else {
+    nav.innerHTML = `
+      <button class="btn btn-outline btn-sm" onclick="switchTab('login');showPage('page-auth')">Giriş</button>
+      <button class="btn btn-primary btn-sm" onclick="switchTab('register');showPage('page-auth')">Qeydiyyat</button>
+    `;
+  }
+}
+
 // ---------- ROUTER ----------
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -30,13 +53,13 @@ function showPage(id) {
 }
 
 function route() {
-  const hash = location.hash.replace('#', '') || '';
+  updateNavbar();
+  const hash    = location.hash.replace('#', '') || '';
   const session = DB.session;
 
   if (hash.startsWith('u/')) {
-    const username = hash.slice(2);
     showPage('page-send');
-    loadSendPage(username);
+    loadSendPage(hash.slice(2));
     return;
   }
 
@@ -270,7 +293,7 @@ function selectEmoji(emoji) {
   DB.saveUsers(users);
   closeEmojiModal();
   loadDashboard();
-  if (typeof updateNavbar === 'function') updateNavbar();
+  updateNavbar();
   toast('Profil emojisi yeniləndi ' + emoji, 'success');
 }
 
