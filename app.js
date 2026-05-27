@@ -35,14 +35,14 @@ function route() {
 
   if (hash.startsWith('u/')) {
     const username = hash.slice(2);
-    loadSendPage(username);
     showPage('page-send');
+    loadSendPage(username);
     return;
   }
 
   if (session) {
-    loadDashboard();
     showPage('page-dashboard');
+    loadDashboard();
   } else {
     showPage('page-auth');
   }
@@ -154,6 +154,7 @@ function todayCount(msgs) {
 
 function updateBadge(n) {
   const badge = document.getElementById('unread-badge');
+  if (!badge) return;
   if (n > 0) {
     badge.textContent = n;
     badge.style.display = 'inline';
