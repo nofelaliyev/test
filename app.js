@@ -109,9 +109,10 @@ function register() {
   users[username] = { name, username, password, createdAt: new Date().toISOString() };
   DB.saveUsers(users);
   DB.saveSession({ username, name });
+  updateNavbar();
+  showPage('page-dashboard');
+  loadDashboard();
   toast('Qeydiyyat uğurlu oldu! Xoş gəldiniz 🎉', 'success');
-  location.hash = '';
-  route();
 }
 
 function login() {
@@ -127,16 +128,17 @@ function login() {
   }
 
   DB.saveSession({ username, name: users[username].name });
+  updateNavbar();
+  showPage('page-dashboard');
+  loadDashboard();
   toast('Xoş gəldiniz, ' + users[username].name + '!', 'success');
-  location.hash = '';
-  route();
 }
 
 function logout() {
   DB.clearSession();
+  updateNavbar();
+  showPage('page-auth');
   toast('Çıxış edildi');
-  location.hash = '';
-  route();
 }
 
 // ---------- DASHBOARD ----------
