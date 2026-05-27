@@ -6,11 +6,15 @@ const DB = {
   get users()    { return JSON.parse(localStorage.getItem('ss_users') || '{}'); },
   get messages() { return JSON.parse(localStorage.getItem('ss_messages') || '[]'); },
   get session()  { return JSON.parse(localStorage.getItem('ss_session') || 'null'); },
+  get polls()    { return JSON.parse(localStorage.getItem('ss_polls') || '[]'); },
+  get voted()    { return JSON.parse(localStorage.getItem('ss_voted') || '{}'); },
 
   saveUsers(u)    { localStorage.setItem('ss_users', JSON.stringify(u)); },
   saveMessages(m) { localStorage.setItem('ss_messages', JSON.stringify(m)); },
   saveSession(s)  { localStorage.setItem('ss_session', JSON.stringify(s)); },
   clearSession()  { localStorage.removeItem('ss_session'); },
+  savePolls(p)    { localStorage.setItem('ss_polls', JSON.stringify(p)); },
+  saveVoted(v)    { localStorage.setItem('ss_voted', JSON.stringify(v)); },
 };
 
 // ---------- ROUTER ----------
@@ -130,6 +134,7 @@ function loadDashboard() {
   if (si) si.value = '';
   if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
 
+  renderPolls();
   renderMessages('all');
   updateBadge(unread.length);
 }
@@ -236,6 +241,224 @@ function deleteMessage() {
   toast('Mesaj silindi');
 }
 
+// ---------- POLLS — DASHBOARD ----------
+function renderPolls() {
+  const session = DB.session;
+  const polls   = DB.polls.filter(p => p.owner === session.username)
+                          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const container = document.getElementById('polls-container');
+  if (!container) return;
+
+  if (!polls.length) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:32px 20px">
+        <div class="empty-icon">📊</div>
+        <p>Hələ anket yoxdur.<br>Yeni anket yarat, dostların səs versin!</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = polls.map(poll => {
+    const total = Object.values(poll.votes).reduce((s, v) => s + v, 0);
+    const optHtml = poll.options.map(opt => {
+      const v   = poll.votes[opt.id] || 0;
+      const pct = total ? Math.round(v / total * 100) : 0;
+      return `
+        <div class="poll-result-row">
+          <div class="poll-result-label">
+            <span>${escHtml(opt.text)}</span>
+            <span class="poll-result-count">${v} səs · ${pct}%</span>
+          </div>
+          <div class="poll-bar-track">
+            <div class="poll-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="poll-card">
+        <div class="poll-card-header">
+          <span class="poll-question">${escHtml(poll.question)}</span>
+          <button class="btn btn-sm btn-ghost" onclick="confirmDeletePoll('${poll.id}')">Sil</button>
+        </div>
+        ${optHtml}
+        <div class="poll-footer">📊 Cəmi ${total} səs · ${timeAgo(poll.createdAt)}</div>
+      </div>`;
+  }).join('');
+}
+
+function openPollModal() {
+  document.getElementById('poll-question').value = '';
+  renderOptionInputs(['', '']);
+  document.getElementById('modal-poll').classList.add('open');
+  document.getElementById('poll-question').focus();
+}
+
+function closePollModal() {
+  document.getElementById('modal-poll').classList.remove('open');
+}
+
+let _pollOptions = ['', ''];
+
+function renderOptionInputs(opts) {
+  _pollOptions = opts.slice();
+  const c = document.getElementById('poll-options-list');
+  c.innerHTML = _pollOptions.map((v, i) => `
+    <div class="poll-option-row">
+      <input
+        type="text"
+        class="poll-option-input"
+        placeholder="Seçim ${i + 1}"
+        value="${escHtml(v)}"
+        oninput="_pollOptions[${i}] = this.value"
+        maxlength="80"
+      >
+      ${_pollOptions.length > 2
+        ? `<button class="poll-option-remove" onclick="removeOption(${i})" title="Sil">✕</button>`
+        : ''}
+    </div>`).join('');
+}
+
+function addOption() {
+  if (_pollOptions.length >= 5) return;
+  _pollOptions.push('');
+  renderOptionInputs(_pollOptions);
+  const inputs = document.querySelectorAll('.poll-option-input');
+  inputs[inputs.length - 1].focus();
+}
+
+function removeOption(i) {
+  _pollOptions.splice(i, 1);
+  renderOptionInputs(_pollOptions);
+}
+
+function createPoll() {
+  const question = document.getElementById('poll-question').value.trim();
+  const opts     = _pollOptions.map(o => o.trim()).filter(Boolean);
+
+  if (!question) { toast('Sual daxil edin', 'error'); return; }
+  if (opts.length < 2) { toast('Ən azı 2 seçim lazımdır', 'error'); return; }
+
+  const session = DB.session;
+  const polls   = DB.polls;
+  const newPoll = {
+    id: 'poll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    owner: session.username,
+    question,
+    options: opts.map((text, i) => ({ id: 'opt_' + i, text })),
+    votes: {},
+    createdAt: new Date().toISOString(),
+  };
+  polls.push(newPoll);
+  DB.savePolls(polls);
+  closePollModal();
+  renderPolls();
+  toast('Anket yaradıldı! 🗳️', 'success');
+}
+
+let _deletePollId = null;
+
+function confirmDeletePoll(id) {
+  _deletePollId = id;
+  document.getElementById('modal-delete-poll').classList.add('open');
+}
+
+function closeDeletePollModal() {
+  _deletePollId = null;
+  document.getElementById('modal-delete-poll').classList.remove('open');
+}
+
+function deletePoll() {
+  if (!_deletePollId) return;
+  DB.savePolls(DB.polls.filter(p => p.id !== _deletePollId));
+  closeDeletePollModal();
+  renderPolls();
+  toast('Anket silindi');
+}
+
+// ---------- POLLS — SEND PAGE ----------
+function renderSendPolls(username) {
+  const polls = DB.polls.filter(p => p.owner === username)
+                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const container = document.getElementById('send-polls');
+  if (!container) return;
+  if (!polls.length) { container.style.display = 'none'; return; }
+
+  container.style.display = 'block';
+  container.innerHTML = polls.map(poll => {
+    const voted   = DB.voted[poll.id];
+    const total   = Object.values(poll.votes).reduce((s, v) => s + v, 0);
+
+    if (voted) {
+      return renderPollResults(poll, total, voted);
+    }
+
+    const optHtml = poll.options.map(opt => `
+      <label class="vote-option">
+        <input type="radio" name="vote_${poll.id}" value="${opt.id}">
+        <span class="vote-option-text">${escHtml(opt.text)}</span>
+      </label>`).join('');
+
+    return `
+      <div class="poll-card" id="poll-card-${poll.id}">
+        <div class="poll-question" style="margin-bottom:12px">${escHtml(poll.question)}</div>
+        <div class="vote-options">${optHtml}</div>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="castVote('${poll.id}')">
+          🗳️ Səs ver
+        </button>
+        <div class="poll-footer">${total} səs</div>
+      </div>`;
+  }).join('');
+}
+
+function renderPollResults(poll, total, votedOptId) {
+  const optHtml = poll.options.map(opt => {
+    const v   = poll.votes[opt.id] || 0;
+    const pct = total ? Math.round(v / total * 100) : 0;
+    const isVoted = opt.id === votedOptId;
+    return `
+      <div class="poll-result-row${isVoted ? ' voted' : ''}">
+        <div class="poll-result-label">
+          <span>${escHtml(opt.text)}${isVoted ? ' ✓' : ''}</span>
+          <span class="poll-result-count">${v} · ${pct}%</span>
+        </div>
+        <div class="poll-bar-track">
+          <div class="poll-bar-fill${isVoted ? ' voted' : ''}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="poll-card" id="poll-card-${poll.id}">
+      <div class="poll-question" style="margin-bottom:12px">${escHtml(poll.question)}</div>
+      ${optHtml}
+      <div class="poll-footer">📊 ${total} səs</div>
+    </div>`;
+}
+
+function castVote(pollId) {
+  const selected = document.querySelector(`input[name="vote_${pollId}"]:checked`);
+  if (!selected) { toast('Bir seçim seçin', 'error'); return; }
+
+  const optId  = selected.value;
+  const polls  = DB.polls;
+  const poll   = polls.find(p => p.id === pollId);
+  if (!poll) return;
+
+  poll.votes[optId] = (poll.votes[optId] || 0) + 1;
+  DB.savePolls(polls);
+
+  const voted = DB.voted;
+  voted[pollId] = optId;
+  DB.saveVoted(voted);
+
+  const total = Object.values(poll.votes).reduce((s, v) => s + v, 0);
+  const card  = document.getElementById('poll-card-' + pollId);
+  if (card) card.outerHTML = renderPollResults(poll, total, optId);
+
+  toast('Səsiniz qeydə alındı! 🗳️', 'success');
+}
+
+// ---------- SABLONLAR ----------
 function sablonSec(btn) {
   const textarea = document.getElementById('send-text');
   textarea.value = btn.textContent.trim();
@@ -261,6 +484,7 @@ function loadSendPage(username) {
   document.getElementById('send-target').value = username;
   document.getElementById('send-text').value   = '';
   document.getElementById('send-charcount').textContent = '0 / 500';
+  renderSendPolls(username);
 }
 
 function updateCharCount() {
