@@ -747,6 +747,50 @@ body {
   text-align: center;
 }
 
+/* ---- ŞABLON SUALLAR ---- */
+.sablonlar {
+  margin-bottom: 16px;
+}
+
+.sablon-baslik {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.sablon-dugmeler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sablon-dugmeler button {
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.sablon-dugmeler button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(108, 99, 255, 0.06);
+}
+
+.sablon-dugmeler button.aktiv {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 500px) {
   .hero h1 { font-size: 28px; }

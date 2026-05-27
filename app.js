@@ -236,6 +236,15 @@ function deleteMessage() {
   toast('Mesaj silindi');
 }
 
+function sablonSec(btn) {
+  const textarea = document.getElementById('send-text');
+  textarea.value = btn.textContent.trim();
+  updateCharCount();
+  textarea.focus();
+  document.querySelectorAll('.sablon-dugmeler button').forEach(b => b.classList.remove('aktiv'));
+  btn.classList.add('aktiv');
+}
+
 // ---------- SEND PAGE ----------
 function loadSendPage(username) {
   const users = DB.users;
