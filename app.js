@@ -17,6 +17,11 @@ const DB = {
   saveVoted(v)    { localStorage.setItem('ss_voted', JSON.stringify(v)); },
 };
 
+// ---------- AVATAR HELPER ----------
+function userAvatar(user) {
+  return user.emoji || (user.name ? user.name[0].toUpperCase() : '?');
+}
+
 // ---------- ROUTER ----------
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -118,9 +123,12 @@ function loadDashboard() {
   const unread   = messages.filter(m => !m.read);
   const total    = messages.length;
 
-  document.getElementById('nav-username').textContent = session.name;
-  document.getElementById('nav-avatar').textContent   = session.name[0].toUpperCase();
+  const me = DB.users[session.username] || {};
+  document.getElementById('db-avatar').textContent    = userAvatar(me);
   document.getElementById('db-greeting').textContent  = 'Salam, ' + session.name + '! 👋';
+  document.getElementById('db-username').textContent  = '@' + session.username;
+  const navAvatar = document.getElementById('nav-avatar');
+  if (navAvatar) navAvatar.textContent = userAvatar(me);
 
   document.getElementById('stat-total').textContent   = total;
   document.getElementById('stat-unread').textContent  = unread.length;
@@ -239,6 +247,30 @@ function deleteMessage() {
   closeDeleteModal();
   loadDashboard();
   toast('Mesaj silindi');
+}
+
+// ---------- EMOJI PICKER ----------
+function openEmojiModal() {
+  const grid = document.querySelector('.emoji-grid');
+  grid.innerHTML = grid.textContent.trim().split(/\s+/).map(e =>
+    `<button class="emoji-btn" onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+  document.getElementById('modal-emoji').classList.add('open');
+}
+
+function closeEmojiModal() {
+  document.getElementById('modal-emoji').classList.remove('open');
+}
+
+function selectEmoji(emoji) {
+  const session = DB.session;
+  const users   = DB.users;
+  users[session.username].emoji = emoji;
+  DB.saveUsers(users);
+  closeEmojiModal();
+  loadDashboard();
+  if (typeof updateNavbar === 'function') updateNavbar();
+  toast('Profil emojisi yeniləndi ' + emoji, 'success');
 }
 
 // ---------- POLLS — DASHBOARD ----------
@@ -490,7 +522,10 @@ function loadSendPage(username) {
   const joinedShort = new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'short' });
 
   // Cover
-  document.getElementById('send-avatar').textContent    = user.name[0].toUpperCase();
+  document.getElementById('send-avatar').textContent    = userAvatar(user);
+  const editOverlay = document.getElementById('cover-edit-overlay');
+  const session = DB.session;
+  if (editOverlay) editOverlay.style.display = (session && session.username === username) ? 'flex' : 'none';
   document.getElementById('send-name').textContent      = user.name;
   document.getElementById('send-handle').textContent    = '@' + username;
   document.getElementById('send-joined').textContent    = '📅 ' + joinedShort + ' tarixindən';
@@ -579,7 +614,7 @@ function searchUsers(query) {
 
   results.innerHTML = matches.map(u => `
     <div class="search-user-card">
-      <div class="search-avatar">${u.name[0].toUpperCase()}</div>
+      <div class="search-avatar">${userAvatar(u)}</div>
       <div class="search-info">
         <div class="search-name">${escHtml(u.name)}</div>
         <div class="search-handle">@${escHtml(u.username)}</div>

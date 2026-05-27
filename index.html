@@ -82,11 +82,17 @@
   <div class="dashboard">
 
     <div class="dashboard-header">
-      <h2 id="db-greeting">Salam!</h2>
+      <div class="dashboard-profile">
+        <div class="avatar-edit-wrap" onclick="openEmojiModal()" title="Emojini dəyiş">
+          <div class="avatar-lg" id="db-avatar">?</div>
+          <div class="avatar-edit-overlay">✏️</div>
+        </div>
+        <div>
+          <h2 id="db-greeting">Salam!</h2>
+          <p id="db-username" style="color:var(--text-light);font-size:13px;margin-top:2px"></p>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;align-items:center">
-        <span style="position:relative">
-          <span id="unread-badge" class="badge" style="display:none;position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;display:none;align-items:center;justify-content:center;font-size:11px;border-radius:20px"></span>
-        </span>
         <button class="btn btn-outline btn-sm" onclick="markAllRead()">Hamısını oxu</button>
         <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
       </div>
@@ -181,7 +187,10 @@
     <!-- Cover / Hero -->
     <div class="profile-cover">
       <div class="profile-cover-inner">
-        <div class="avatar-xl" id="send-avatar">?</div>
+        <div class="avatar-edit-wrap" id="cover-avatar-wrap">
+          <div class="avatar-xl" id="send-avatar">?</div>
+          <div class="avatar-edit-overlay" id="cover-edit-overlay" style="display:none" onclick="openEmojiModal()" title="Emojini dəyiş">✏️</div>
+        </div>
         <div class="profile-cover-info">
           <h1 id="send-name">İstifadəçi</h1>
           <span id="send-handle" class="profile-handle">@istifadeci</span>
@@ -293,6 +302,24 @@
   </div>
 </div>
 
+<!-- ===== EMOJI PICKER MODAL ===== -->
+<div class="modal-overlay" id="modal-emoji">
+  <div class="modal emoji-modal">
+    <h3>😊 Profil emojisi seç</h3>
+    <p>Profilinizi təmsil edən emojini seçin.</p>
+    <div class="emoji-grid">
+      😀 😄 😎 🥳 🤩 😍 🥰 🤔 😴 🥸 🤓 🧐
+      👽 👾 🤖 💀 🎭 🦄 🐱 🐶 🦊 🐻 🐼 🐨
+      🦁 🐯 🐸 🐵 🐧 🦋 🐙 🦈 🦉 🦚 🦜 🦝
+      🌙 ⭐ 🌈 🔥 💎 ⚡ 🌊 🍀 🌸 🌺 🌻 🌴
+      🍁 🎃 🎄 🎯 🚀 🎨 🎵 🎮 🏆 💫 🌀 ❄️
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEmojiModal()">Ləğv et</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== POLL CREATE MODAL ===== -->
 <div class="modal-overlay" id="modal-poll">
   <div class="modal" style="max-width:520px">
@@ -355,9 +382,12 @@
     const session = JSON.parse(localStorage.getItem('ss_session') || 'null');
     const nav = document.getElementById('nav-actions');
     if (session) {
+      const users  = JSON.parse(localStorage.getItem('ss_users') || '{}');
+      const user   = users[session.username] || {};
+      const avatar = user.emoji || session.name[0].toUpperCase();
       nav.innerHTML = `
         <div class="nav-user">
-          <div class="avatar-sm" id="nav-avatar">${session.name[0].toUpperCase()}</div>
+          <div class="avatar-sm" id="nav-avatar">${avatar}</div>
           <span id="nav-username">${session.name}</span>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>

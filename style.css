@@ -477,6 +477,70 @@ body {
   font-size: 15px;
 }
 
+/* ---- EMOJI PICKER ---- */
+.emoji-modal {
+  max-width: 420px;
+}
+
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 16px;
+}
+
+.emoji-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.emoji-btn:hover {
+  border-color: var(--primary);
+  background: rgba(108,99,255,0.08);
+  transform: scale(1.15);
+}
+
+/* ---- AVATAR EDIT WRAP ---- */
+.avatar-edit-wrap {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.avatar-edit-wrap:hover .avatar-edit-overlay {
+  opacity: 1;
+}
+
+/* Dashboard profile row */
+.dashboard-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 /* ---- PUBLIC PROFILE PAGE ---- */
 .profile-cover {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
