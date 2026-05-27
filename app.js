@@ -382,9 +382,16 @@ function renderSendPolls(username) {
                         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const container = document.getElementById('send-polls');
   if (!container) return;
-  if (!polls.length) { container.style.display = 'none'; return; }
 
-  container.style.display = 'block';
+  if (!polls.length) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:32px 0">
+        <div class="empty-icon">🗳️</div>
+        <p>Bu istifadəçinin aktiv anketi yoxdur.</p>
+      </div>`;
+    return;
+  }
+
   container.innerHTML = polls.map(poll => {
     const voted   = DB.voted[poll.id];
     const total   = Object.values(poll.votes).reduce((s, v) => s + v, 0);
@@ -478,12 +485,28 @@ function loadSendPage(username) {
 
   if (!user) return;
 
-  document.getElementById('send-avatar').textContent = user.name[0].toUpperCase();
-  document.getElementById('send-name').textContent   = user.name;
-  document.getElementById('send-handle').textContent = '@' + username;
+  const userPolls   = DB.polls.filter(p => p.owner === username);
+  const joinedDate  = new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' });
+  const joinedShort = new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'short' });
+
+  // Cover
+  document.getElementById('send-avatar').textContent    = user.name[0].toUpperCase();
+  document.getElementById('send-name').textContent      = user.name;
+  document.getElementById('send-handle').textContent    = '@' + username;
+  document.getElementById('send-joined').textContent    = '📅 ' + joinedShort + ' tarixindən';
+  document.getElementById('send-poll-count').textContent = '🗳️ ' + userPolls.length + ' anket';
+
+  // Sidebar
+  document.getElementById('sidebar-name').textContent     = user.name;
+  document.getElementById('sidebar-username').textContent = '@' + username;
+  document.getElementById('sidebar-joined').textContent   = joinedDate;
+  document.getElementById('sidebar-polls').textContent    = userPolls.length + ' anket';
+
+  // Form
   document.getElementById('send-target').value = username;
   document.getElementById('send-text').value   = '';
   document.getElementById('send-charcount').textContent = '0 / 500';
+
   renderSendPolls(username);
 }
 

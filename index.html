@@ -162,82 +162,133 @@
   </div>
 </div>
 
-<!-- ===== PAGE: SEND (public profile) ===== -->
+<!-- ===== PAGE: PUBLIC PROFILE ===== -->
 <div class="page" id="page-send">
-  <div class="send-page">
-    <div class="send-card">
 
-      <!-- Not found -->
-      <div id="send-not-found" style="display:none;text-align:center" class="card">
-        <div style="font-size:48px;margin-bottom:12px">😔</div>
-        <h2>İstifadəçi tapılmadı</h2>
-        <p style="color:var(--text-light);margin:8px 0 20px">Bu istifadəçi adı mövcud deyil.</p>
-        <a href="#" class="btn btn-primary">Ana səhifəyə qayıt</a>
-      </div>
+  <!-- Not found -->
+  <div id="send-not-found" style="display:none" class="send-notfound">
+    <div class="card" style="text-align:center;max-width:400px;margin:80px auto">
+      <div style="font-size:48px;margin-bottom:12px">😔</div>
+      <h2>İstifadəçi tapılmadı</h2>
+      <p style="color:var(--text-light);margin:8px 0 20px">Bu istifadəçi adı mövcud deyil.</p>
+      <a href="#" class="btn btn-primary">Ana səhifəyə qayıt</a>
+    </div>
+  </div>
 
-      <!-- Send form -->
-      <div id="send-form-area" style="display:none">
-        <div class="card">
-          <div class="profile-header">
-            <div class="avatar-lg" id="send-avatar">?</div>
-            <h2 id="send-name">İstifadəçi</h2>
-            <p id="send-handle">@istifadeci</p>
+  <!-- Profile body -->
+  <div id="send-form-area" style="display:none">
+
+    <!-- Cover / Hero -->
+    <div class="profile-cover">
+      <div class="profile-cover-inner">
+        <div class="avatar-xl" id="send-avatar">?</div>
+        <div class="profile-cover-info">
+          <h1 id="send-name">İstifadəçi</h1>
+          <span id="send-handle" class="profile-handle">@istifadeci</span>
+          <div class="profile-meta-row">
+            <span id="send-joined">📅 Qoşulma tarixi</span>
+            <span id="send-poll-count">🗳️ 0 anket</span>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <input type="hidden" id="send-target">
+    <div class="profile-page-body">
+      <div class="profile-page-grid">
 
-          <!-- Polls on public profile -->
-          <div id="send-polls" style="display:none;margin-bottom:20px"></div>
+        <!-- LEFT: polls + message form -->
+        <div class="profile-main">
 
-          <div class="sablonlar">
-            <p class="sablon-baslik">✨ Hazır suallar</p>
-            <div class="sablon-dugmeler" id="sablon-dugmeler">
-              <button onclick="sablonSec(this)">Məni necə görürsən? 👀</button>
-              <button onclick="sablonSec(this)">Məndə dəyişməsini istədiyin bir şey? 🔄</button>
-              <button onclick="sablonSec(this)">Ən yaxşı xüsusiyyətim nədir? ✨</button>
-              <button onclick="sablonSec(this)">İlk təəssüratın nə idi? 🎯</button>
-              <button onclick="sablonSec(this)">Mənimlə bağlı bir sirr? 🤫</button>
-              <button onclick="sablonSec(this)">Ən çox nəyi bəyənirsən? ❤️</button>
+          <!-- Polls -->
+          <div id="send-polls-wrap">
+            <div class="section-title">🗳️ Anketlər</div>
+            <div id="send-polls">
+              <div class="empty-state" style="padding:32px 0">
+                <div class="empty-icon">🗳️</div>
+                <p>Bu istifadəçinin aktiv anketi yoxdur.</p>
+              </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Anonim mesajınız</label>
-            <textarea
-              id="send-text"
-              placeholder="Buraya mesajınızı yazın... Kimliyiniz gizli qalacaq 🤫"
-              maxlength="500"
-              oninput="updateCharCount()"
-            ></textarea>
-            <div class="char-counter" id="send-charcount">0 / 500</div>
-            <div id="send-err" class="form-error"></div>
+          <!-- Message form -->
+          <div class="section-title" style="margin-top:32px">💬 Anonim mesaj göndər</div>
+          <div class="card">
+            <input type="hidden" id="send-target">
+
+            <div class="sablonlar">
+              <p class="sablon-baslik">✨ Hazır suallar</p>
+              <div class="sablon-dugmeler">
+                <button onclick="sablonSec(this)">Məni necə görürsən? 👀</button>
+                <button onclick="sablonSec(this)">Məndə dəyişməsini istədiyin bir şey? 🔄</button>
+                <button onclick="sablonSec(this)">Ən yaxşı xüsusiyyətim nədir? ✨</button>
+                <button onclick="sablonSec(this)">İlk təəssüratın nə idi? 🎯</button>
+                <button onclick="sablonSec(this)">Mənimlə bağlı bir sirr? 🤫</button>
+                <button onclick="sablonSec(this)">Ən çox nəyi bəyənirsən? ❤️</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Mesajınız</label>
+              <textarea
+                id="send-text"
+                placeholder="Buraya mesajınızı yazın... Kimliyiniz gizli qalacaq 🤫"
+                maxlength="500"
+                oninput="updateCharCount()"
+              ></textarea>
+              <div class="char-counter" id="send-charcount">0 / 500</div>
+              <div id="send-err" class="form-error"></div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="sendMessage()">
+              📨 Anonim göndər
+            </button>
+            <p style="text-align:center;font-size:12px;color:var(--text-light);margin-top:10px">
+              Mesajınız tamamilə anonimdir.
+            </p>
           </div>
 
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="sendMessage()">
-            📨 Anonim göndər
-          </button>
-
-          <p style="text-align:center;font-size:12px;color:var(--text-light);margin-top:12px">
-            Mesajınız tamamilə anonimdir. Heç kim kimliğinizi bilməyəcək.
-          </p>
+          <!-- Success -->
+          <div id="send-success" style="display:none;text-align:center" class="card" style="margin-top:16px">
+            <div style="font-size:56px;margin-bottom:12px;animation:float 2s ease-in-out infinite">🎉</div>
+            <h2 style="margin-bottom:8px">Mesaj göndərildi!</h2>
+            <p style="color:var(--text-light)">Mesajınız uğurla çatdırıldı. Kimliğiniz gizli qalacaq.</p>
+            <div style="margin-top:16px;width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+              <div style="height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));animation:progress 3s linear forwards"></div>
+            </div>
+          </div>
         </div>
 
-        <div style="text-align:center;margin-top:16px">
-          <p style="font-size:13px;color:var(--text-light);margin-bottom:8px">Siz də öz profilinizi yaradın!</p>
-          <a href="#" class="btn btn-outline">🌀 SirSual-a qoşul</a>
+        <!-- RIGHT: profile info card -->
+        <div class="profile-sidebar">
+          <div class="card">
+            <div class="sidebar-section-title">👤 Profil haqqında</div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">Ad</span>
+              <span id="sidebar-name" class="profile-info-value">—</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">İstifadəçi adı</span>
+              <span id="sidebar-username" class="profile-info-value">—</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">Qoşulma</span>
+              <span id="sidebar-joined" class="profile-info-value">—</span>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-label">Anketlər</span>
+              <span id="sidebar-polls" class="profile-info-value">—</span>
+            </div>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+              <p style="font-size:12px;color:var(--text-light);margin-bottom:10px">Siz də qoşulun!</p>
+              <a href="#" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">
+                🌀 SirSual-a qoşul
+              </a>
+            </div>
+          </div>
         </div>
+
       </div>
-
-      <!-- Success state -->
-      <div id="send-success" style="display:none;text-align:center" class="card">
-        <div style="font-size:56px;margin-bottom:12px;animation:float 2s ease-in-out infinite">🎉</div>
-        <h2 style="margin-bottom:8px">Mesaj göndərildi!</h2>
-        <p style="color:var(--text-light)">Mesajınız uğurla çatdırıldı. Kimliğiniz gizli qalacaq.</p>
-        <div style="margin-top:16px;width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
-          <div style="height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));animation:progress 3s linear forwards"></div>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>

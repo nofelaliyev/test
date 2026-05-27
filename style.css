@@ -477,7 +477,123 @@ body {
   font-size: 15px;
 }
 
-/* ---- SEND PAGE (public profile) ---- */
+/* ---- PUBLIC PROFILE PAGE ---- */
+.profile-cover {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  padding: 40px 20px 36px;
+  color: white;
+}
+
+.profile-cover-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.avatar-xl {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  border: 3px solid rgba(255,255,255,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 34px;
+  flex-shrink: 0;
+}
+
+.profile-cover-info h1 {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.profile-handle {
+  font-size: 14px;
+  opacity: 0.85;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.profile-meta-row {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  opacity: 0.9;
+  flex-wrap: wrap;
+}
+
+.profile-page-body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+.profile-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .profile-page-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-sidebar {
+    order: -1;
+  }
+}
+
+.profile-main {}
+
+.profile-sidebar {}
+
+.sidebar-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.profile-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.profile-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.profile-info-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* legacy — keep for small standalone uses */
 .send-page {
   min-height: calc(100vh - 64px);
   display: flex;
@@ -486,15 +602,9 @@ body {
   padding: 40px 20px;
 }
 
-.send-card {
-  max-width: 500px;
-  width: 100%;
-}
+.send-card { max-width: 500px; width: 100%; }
 
-.profile-header {
-  text-align: center;
-  margin-bottom: 28px;
-}
+.profile-header { text-align: center; margin-bottom: 28px; }
 
 .avatar-lg {
   width: 80px;
@@ -511,16 +621,8 @@ body {
   box-shadow: 0 8px 20px rgba(108, 99, 255, 0.3);
 }
 
-.profile-header h2 {
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 6px;
-}
-
-.profile-header p {
-  color: var(--text-light);
-  font-size: 14px;
-}
+.profile-header h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.profile-header p  { color: var(--text-light); font-size: 14px; }
 
 .char-counter {
   font-size: 12px;
