@@ -130,8 +130,15 @@
       </div>
     </div>
 
+    <!-- Character report -->
+    <div class="section-title" style="margin-top:8px">⭐ Xarakter hesabatım</div>
+    <div id="db-char-report"></div>
+
+    <div class="section-title" style="margin-top:24px">💬 Gələn rəylər</div>
+    <div id="db-imp-list"></div>
+
     <!-- Polls -->
-    <div class="section-title" style="margin-top:8px">
+    <div class="section-title" style="margin-top:32px">
       🗳️ Anketlərim
       <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openPollModal()">+ Yeni anket</button>
     </div>
@@ -288,7 +295,12 @@
               <span id="sidebar-polls" class="profile-info-value">—</span>
             </div>
 
-            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+              <div class="sidebar-section-title">⭐ Xarakter hesabatı</div>
+              <div id="send-char-report"></div>
+            </div>
+
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
               <p style="font-size:12px;color:var(--text-light);margin-bottom:10px">Siz də qoşulun!</p>
               <a href="#" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">
                 🌀 SirSual-a qoşul
@@ -299,6 +311,51 @@
 
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ===== IMPRESSION WIZARD ===== -->
+<div id="imp-wizard" class="imp-wizard" style="display:none">
+  <div class="imp-card">
+
+    <div class="imp-header">
+      <div class="imp-av" id="imp-wizard-avatar">?</div>
+      <div>
+        <div class="imp-header-name" id="imp-wizard-name">İstifadəçi</div>
+        <div class="imp-header-sub">bu linki sizinlə paylaşdı · onu tanıyırsınızsa rəy bildirin</div>
+      </div>
+    </div>
+
+    <div class="imp-trust-row">
+      <span class="imp-trust-badge">🔒 100% anonim</span>
+      <span class="imp-trust-badge">🛡️ təhlükəsiz</span>
+    </div>
+
+    <div class="imp-progress-track">
+      <div class="imp-progress-fill" id="imp-step-fill" style="width:50%"></div>
+    </div>
+    <div class="imp-step-label" id="imp-step-label">ADDIM 1 / 2</div>
+
+    <!-- Step 1: Traits -->
+    <div id="imp-s1">
+      <h2 class="imp-title">Xarakterini necə təsvir edərdin? 👇</h2>
+      <p class="imp-subtitle">Onu ən yaxşı təsvir edən xüsusiyyətləri seç (birdən çox ola bilər)</p>
+      <div class="imp-traits" id="imp-traits"></div>
+    </div>
+
+    <!-- Step 2: Message -->
+    <div id="imp-s2" style="display:none">
+      <h2 class="imp-title">Ona dürüst ol 💬</h2>
+      <p class="imp-subtitle">Kim yazdığını heç vaxt bilməyəcək. Ürəyindən keçəni söylə.</p>
+      <textarea class="imp-textarea" id="imp-msg" placeholder="Buraya yaz... (istəyə bağlı)" maxlength="300"></textarea>
+    </div>
+
+    <div class="imp-actions">
+      <button class="imp-btn-back" id="imp-back-btn" style="display:none" onclick="impBack()">← Geri</button>
+      <button class="imp-btn-skip" onclick="skipImpression()">Keç</button>
+      <button class="imp-btn-next" id="imp-next-btn" onclick="impNext()">İrəli →</button>
+    </div>
+
   </div>
 </div>
 

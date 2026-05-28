@@ -3,19 +3,42 @@
 // ========================
 
 const DB = {
-  get users()    { return JSON.parse(localStorage.getItem('ss_users') || '{}'); },
-  get messages() { return JSON.parse(localStorage.getItem('ss_messages') || '[]'); },
-  get session()  { return JSON.parse(localStorage.getItem('ss_session') || 'null'); },
-  get polls()    { return JSON.parse(localStorage.getItem('ss_polls') || '[]'); },
-  get voted()    { return JSON.parse(localStorage.getItem('ss_voted') || '{}'); },
+  get users()       { return JSON.parse(localStorage.getItem('ss_users') || '{}'); },
+  get messages()    { return JSON.parse(localStorage.getItem('ss_messages') || '[]'); },
+  get session()     { return JSON.parse(localStorage.getItem('ss_session') || 'null'); },
+  get polls()       { return JSON.parse(localStorage.getItem('ss_polls') || '[]'); },
+  get voted()       { return JSON.parse(localStorage.getItem('ss_voted') || '{}'); },
+  get impressions() { return JSON.parse(localStorage.getItem('ss_impressions') || '[]'); },
+  get impSeen()     { return JSON.parse(localStorage.getItem('ss_imp_seen') || '{}'); },
 
-  saveUsers(u)    { localStorage.setItem('ss_users', JSON.stringify(u)); },
-  saveMessages(m) { localStorage.setItem('ss_messages', JSON.stringify(m)); },
-  saveSession(s)  { localStorage.setItem('ss_session', JSON.stringify(s)); },
-  clearSession()  { localStorage.removeItem('ss_session'); },
-  savePolls(p)    { localStorage.setItem('ss_polls', JSON.stringify(p)); },
-  saveVoted(v)    { localStorage.setItem('ss_voted', JSON.stringify(v)); },
+  saveUsers(u)       { localStorage.setItem('ss_users',       JSON.stringify(u)); },
+  saveMessages(m)    { localStorage.setItem('ss_messages',    JSON.stringify(m)); },
+  saveSession(s)     { localStorage.setItem('ss_session',     JSON.stringify(s)); },
+  clearSession()     { localStorage.removeItem('ss_session'); },
+  savePolls(p)       { localStorage.setItem('ss_polls',       JSON.stringify(p)); },
+  saveVoted(v)       { localStorage.setItem('ss_voted',       JSON.stringify(v)); },
+  saveImpressions(i) { localStorage.setItem('ss_impressions', JSON.stringify(i)); },
+  saveImpSeen(s)     { localStorage.setItem('ss_imp_seen',    JSON.stringify(s)); },
 };
+
+const TRAITS = [
+  { key: 'əyləncəli',    emoji: '😄', label: 'Əyləncəli'    },
+  { key: 'intellektual', emoji: '🧠', label: 'İntellektual'  },
+  { key: 'dahi',         emoji: '💡', label: 'Dahi'          },
+  { key: 'savadlı',      emoji: '📚', label: 'Savadlı'       },
+  { key: 'mehriban',     emoji: '🤗', label: 'Mehriban'      },
+  { key: 'kədərli',      emoji: '😔', label: 'Kədərli'       },
+  { key: 'enerjili',     emoji: '🔥', label: 'Enerjili'      },
+  { key: 'sərin',        emoji: '😎', label: 'Sərin'         },
+  { key: 'etibarlı',     emoji: '🤝', label: 'Etibarlı'      },
+  { key: 'yaradıcı',     emoji: '🎨', label: 'Yaradıcı'      },
+  { key: 'komik',        emoji: '😂', label: 'Komik'         },
+  { key: 'sirli',        emoji: '🌙', label: 'Sirli'         },
+  { key: 'cəsur',        emoji: '🦁', label: 'Cəsur'         },
+  { key: 'həssas',       emoji: '🌸', label: 'Həssas'        },
+  { key: 'sadiq',        emoji: '💛', label: 'Sadiq'         },
+  { key: 'ağıllı',       emoji: '🎯', label: 'Ağıllı'        },
+];
 
 // ---------- AVATAR HELPER ----------
 function userAvatar(user) {
@@ -168,6 +191,7 @@ function loadDashboard() {
   if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
 
   renderPolls();
+  renderDashboardImpressions();
   renderMessages('all');
   updateBadge(unread.length);
 }
@@ -523,6 +547,165 @@ function castVote(pollId) {
   toast('Səsiniz qeydə alındı! 🗳️', 'success');
 }
 
+// ---------- IMPRESSION WIZARD ----------
+let _impTarget = null;
+let _impStep   = 1;
+let _impTraits = [];
+
+function openImpressionWizard(username, user) {
+  _impTarget = username;
+  _impStep   = 1;
+  _impTraits = [];
+
+  document.getElementById('imp-wizard-avatar').textContent = userAvatar(user);
+  document.getElementById('imp-wizard-name').textContent   = user.name;
+  document.getElementById('imp-msg').value = '';
+
+  const grid = document.getElementById('imp-traits');
+  grid.innerHTML = TRAITS.map(t => `
+    <button class="imp-trait-btn" data-key="${t.key}" onclick="toggleTrait('${t.key}', this)">
+      <span class="imp-trait-emoji">${t.emoji}</span>
+      <span class="imp-trait-label">${t.label}</span>
+    </button>`).join('');
+
+  impGoTo(1);
+  document.getElementById('imp-wizard').style.display = 'flex';
+}
+
+function closeImpressionWizard() {
+  document.getElementById('imp-wizard').style.display = 'none';
+}
+
+function toggleTrait(key, btn) {
+  if (_impTraits.includes(key)) {
+    _impTraits = _impTraits.filter(k => k !== key);
+    btn.classList.remove('selected');
+  } else {
+    _impTraits.push(key);
+    btn.classList.add('selected');
+  }
+}
+
+function impGoTo(step) {
+  _impStep = step;
+  document.getElementById('imp-s1').style.display = step === 1 ? 'block' : 'none';
+  document.getElementById('imp-s2').style.display = step === 2 ? 'block' : 'none';
+  document.getElementById('imp-step-label').textContent = `ADDIM ${step} / 2`;
+  document.getElementById('imp-step-fill').style.width  = step === 1 ? '50%' : '100%';
+  document.getElementById('imp-next-btn').textContent   = step === 1 ? 'İrəli →' : '✓ Göndər';
+  document.getElementById('imp-back-btn').style.display = step === 1 ? 'none' : 'inline-flex';
+}
+
+function impNext() {
+  if (_impStep === 1) {
+    impGoTo(2);
+  } else {
+    submitImpression();
+  }
+}
+
+function impBack() {
+  if (_impStep === 2) impGoTo(1);
+}
+
+function submitImpression() {
+  const message = document.getElementById('imp-msg').value.trim();
+  const imps    = DB.impressions;
+  imps.push({
+    id:        'imp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    to:        _impTarget,
+    traits:    _impTraits,
+    message,
+    createdAt: new Date().toISOString(),
+  });
+  DB.saveImpressions(imps);
+  markImpSeen(_impTarget);
+  closeImpressionWizard();
+  renderCharReport('send-char-report', _impTarget);
+  toast('Rəyiniz göndərildi! 🙏', 'success');
+}
+
+function skipImpression() {
+  markImpSeen(_impTarget);
+  closeImpressionWizard();
+}
+
+function markImpSeen(username) {
+  const seen = DB.impSeen;
+  seen[username] = true;
+  DB.saveImpSeen(seen);
+}
+
+function renderCharReport(containerId, username) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const imps   = DB.impressions.filter(i => i.to === username);
+  const total  = imps.length;
+
+  if (!total) {
+    container.innerHTML = `<p style="color:var(--text-light);font-size:13px;text-align:center;padding:16px 0">Hələ rəy yoxdur.</p>`;
+    return;
+  }
+
+  const counts = {};
+  imps.forEach(imp => imp.traits.forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max    = sorted[0]?.[1] || 1;
+
+  const bars = sorted.map(([key, cnt]) => {
+    const t   = TRAITS.find(t => t.key === key) || { emoji: '⭐', label: key };
+    const pct = Math.round(cnt / total * 100);
+    return `
+      <div class="char-row">
+        <div class="char-row-label">
+          <span>${t.emoji} ${t.label}</span>
+          <span class="char-row-pct">${pct}%</span>
+        </div>
+        <div class="poll-bar-track">
+          <div class="poll-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="char-report-wrap">
+      <p class="char-report-sub">${total} nəfər rəy bildirdi</p>
+      ${bars}
+    </div>`;
+}
+
+function renderDashboardImpressions() {
+  const session = DB.session;
+  const imps    = DB.impressions
+    .filter(i => i.to === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  renderCharReport('db-char-report', session.username);
+
+  const list = document.getElementById('db-imp-list');
+  if (!list) return;
+
+  if (!imps.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:24px 0"><div class="empty-icon">⭐</div><p>Hələ rəy yoxdur.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = imps.map(imp => {
+    const traitBadges = imp.traits.map(k => {
+      const t = TRAITS.find(t => t.key === k) || { emoji: '⭐', label: k };
+      return `<span class="imp-badge-small">${t.emoji} ${t.label}</span>`;
+    }).join('');
+    return `
+      <div class="message-card">
+        ${traitBadges ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${imp.message ? 10 : 0}px">${traitBadges}</div>` : ''}
+        ${imp.message ? `<div class="message-text">${escHtml(imp.message)}</div>` : ''}
+        <div class="message-meta">
+          <span class="message-time">🕐 ${timeAgo(imp.createdAt)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ---------- SABLONLAR ----------
 function sablonSec(btn) {
   const textarea = document.getElementById('send-text');
@@ -569,6 +752,12 @@ function loadSendPage(username) {
   document.getElementById('send-charcount').textContent = '0 / 500';
 
   renderSendPolls(username);
+  renderCharReport('send-char-report', username);
+
+  const isOwn = session && session.username === username;
+  if (!isOwn && !DB.impSeen[username]) {
+    openImpressionWizard(username, user);
+  }
 }
 
 function updateCharCount() {
