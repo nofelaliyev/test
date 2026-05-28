@@ -56,10 +56,10 @@ function updateNavbar() {
     const user   = DB.users[session.username] || {};
     const avatar = user.emoji || session.name[0].toUpperCase();
     nav.innerHTML = `
-      <div class="nav-user">
+      <a href="#u/${session.username}" class="nav-user" title="Profilimə bax">
         <div class="avatar-sm" id="nav-avatar">${avatar}</div>
         <span id="nav-username">${session.name}</span>
-      </div>
+      </a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Çıxış</button>
     `;
   } else {
@@ -176,7 +176,8 @@ function loadDashboard() {
   const me = DB.users[session.username] || {};
   document.getElementById('db-avatar').textContent    = userAvatar(me);
   document.getElementById('db-greeting').textContent  = 'Salam, ' + session.name + '! 👋';
-  document.getElementById('db-username').textContent  = '@' + session.username;
+  document.getElementById('db-username').innerHTML    =
+    `<a href="#u/${session.username}" class="profile-self-link">@${session.username} · Profilimə bax →</a>`;
   const navAvatar = document.getElementById('nav-avatar');
   if (navAvatar) navAvatar.textContent = userAvatar(me);
 
@@ -194,7 +195,6 @@ function loadDashboard() {
   if (si) si.value = '';
   if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
 
-  renderPolls();
   renderDashboardImpressions();
   renderLeaderboard();
   renderMessages('all');
@@ -328,230 +328,6 @@ function selectEmoji(emoji) {
   toast('Profil emojisi yeniləndi ' + emoji, 'success');
 }
 
-// ---------- POLLS — DASHBOARD ----------
-function renderPolls() {
-  const session = DB.session;
-  const polls   = DB.polls.filter(p => p.owner === session.username)
-                          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const container = document.getElementById('polls-container');
-  if (!container) return;
-
-  if (!polls.length) {
-    container.innerHTML = `
-      <div class="empty-state" style="padding:32px 20px">
-        <div class="empty-icon">📊</div>
-        <p>Hələ anket yoxdur.<br>Yeni anket yarat, dostların səs versin!</p>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = polls.map(poll => {
-    const total = Object.values(poll.votes).reduce((s, v) => s + v, 0);
-    const optHtml = poll.options.map(opt => {
-      const v   = poll.votes[opt.id] || 0;
-      const pct = total ? Math.round(v / total * 100) : 0;
-      return `
-        <div class="poll-result-row">
-          <div class="poll-result-label">
-            <span>${escHtml(opt.text)}</span>
-            <span class="poll-result-count">${v} səs · ${pct}%</span>
-          </div>
-          <div class="poll-bar-track">
-            <div class="poll-bar-fill" style="width:${pct}%"></div>
-          </div>
-        </div>`;
-    }).join('');
-
-    return `
-      <div class="poll-card">
-        <div class="poll-card-header">
-          <span class="poll-question">${escHtml(poll.question)}</span>
-          <button class="btn btn-sm btn-ghost" onclick="confirmDeletePoll('${poll.id}')">Sil</button>
-        </div>
-        ${optHtml}
-        <div class="poll-footer">📊 Cəmi ${total} səs · ${timeAgo(poll.createdAt)}</div>
-      </div>`;
-  }).join('');
-}
-
-function openPollModal() {
-  document.getElementById('poll-question').value = '';
-  renderOptionInputs(['', '']);
-  document.getElementById('modal-poll').classList.add('open');
-  document.getElementById('poll-question').focus();
-}
-
-function closePollModal() {
-  document.getElementById('modal-poll').classList.remove('open');
-}
-
-let _pollOptions = ['', ''];
-
-function renderOptionInputs(opts) {
-  _pollOptions = opts.slice();
-  const c = document.getElementById('poll-options-list');
-  c.innerHTML = _pollOptions.map((v, i) => `
-    <div class="poll-option-row">
-      <input
-        type="text"
-        class="poll-option-input"
-        placeholder="Seçim ${i + 1}"
-        value="${escHtml(v)}"
-        oninput="_pollOptions[${i}] = this.value"
-        maxlength="80"
-      >
-      ${_pollOptions.length > 2
-        ? `<button class="poll-option-remove" onclick="removeOption(${i})" title="Sil">✕</button>`
-        : ''}
-    </div>`).join('');
-}
-
-function addOption() {
-  if (_pollOptions.length >= 5) return;
-  _pollOptions.push('');
-  renderOptionInputs(_pollOptions);
-  const inputs = document.querySelectorAll('.poll-option-input');
-  inputs[inputs.length - 1].focus();
-}
-
-function removeOption(i) {
-  _pollOptions.splice(i, 1);
-  renderOptionInputs(_pollOptions);
-}
-
-function createPoll() {
-  const question = document.getElementById('poll-question').value.trim();
-  const opts     = _pollOptions.map(o => o.trim()).filter(Boolean);
-
-  if (!question) { toast('Sual daxil edin', 'error'); return; }
-  if (opts.length < 2) { toast('Ən azı 2 seçim lazımdır', 'error'); return; }
-
-  const session = DB.session;
-  const polls   = DB.polls;
-  const newPoll = {
-    id: 'poll_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    owner: session.username,
-    question,
-    options: opts.map((text, i) => ({ id: 'opt_' + i, text })),
-    votes: {},
-    createdAt: new Date().toISOString(),
-  };
-  polls.push(newPoll);
-  DB.savePolls(polls);
-  closePollModal();
-  renderPolls();
-  toast('Anket yaradıldı! 🗳️', 'success');
-}
-
-let _deletePollId = null;
-
-function confirmDeletePoll(id) {
-  _deletePollId = id;
-  document.getElementById('modal-delete-poll').classList.add('open');
-}
-
-function closeDeletePollModal() {
-  _deletePollId = null;
-  document.getElementById('modal-delete-poll').classList.remove('open');
-}
-
-function deletePoll() {
-  if (!_deletePollId) return;
-  DB.savePolls(DB.polls.filter(p => p.id !== _deletePollId));
-  closeDeletePollModal();
-  renderPolls();
-  toast('Anket silindi');
-}
-
-// ---------- POLLS — SEND PAGE ----------
-function renderSendPolls(username) {
-  const polls = DB.polls.filter(p => p.owner === username)
-                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const container = document.getElementById('send-polls');
-  if (!container) return;
-
-  if (!polls.length) {
-    container.innerHTML = `
-      <div class="empty-state" style="padding:32px 0">
-        <div class="empty-icon">🗳️</div>
-        <p>Bu istifadəçinin aktiv anketi yoxdur.</p>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = polls.map(poll => {
-    const voted   = DB.voted[poll.id];
-    const total   = Object.values(poll.votes).reduce((s, v) => s + v, 0);
-
-    if (voted) {
-      return renderPollResults(poll, total, voted);
-    }
-
-    const optHtml = poll.options.map(opt => `
-      <label class="vote-option">
-        <input type="radio" name="vote_${poll.id}" value="${opt.id}">
-        <span class="vote-option-text">${escHtml(opt.text)}</span>
-      </label>`).join('');
-
-    return `
-      <div class="poll-card" id="poll-card-${poll.id}">
-        <div class="poll-question" style="margin-bottom:12px">${escHtml(poll.question)}</div>
-        <div class="vote-options">${optHtml}</div>
-        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="castVote('${poll.id}')">
-          🗳️ Səs ver
-        </button>
-        <div class="poll-footer">${total} səs</div>
-      </div>`;
-  }).join('');
-}
-
-function renderPollResults(poll, total, votedOptId) {
-  const optHtml = poll.options.map(opt => {
-    const v   = poll.votes[opt.id] || 0;
-    const pct = total ? Math.round(v / total * 100) : 0;
-    const isVoted = opt.id === votedOptId;
-    return `
-      <div class="poll-result-row${isVoted ? ' voted' : ''}">
-        <div class="poll-result-label">
-          <span>${escHtml(opt.text)}${isVoted ? ' ✓' : ''}</span>
-          <span class="poll-result-count">${v} · ${pct}%</span>
-        </div>
-        <div class="poll-bar-track">
-          <div class="poll-bar-fill${isVoted ? ' voted' : ''}" style="width:${pct}%"></div>
-        </div>
-      </div>`;
-  }).join('');
-  return `
-    <div class="poll-card" id="poll-card-${poll.id}">
-      <div class="poll-question" style="margin-bottom:12px">${escHtml(poll.question)}</div>
-      ${optHtml}
-      <div class="poll-footer">📊 ${total} səs</div>
-    </div>`;
-}
-
-function castVote(pollId) {
-  const selected = document.querySelector(`input[name="vote_${pollId}"]:checked`);
-  if (!selected) { toast('Bir seçim seçin', 'error'); return; }
-
-  const optId  = selected.value;
-  const polls  = DB.polls;
-  const poll   = polls.find(p => p.id === pollId);
-  if (!poll) return;
-
-  poll.votes[optId] = (poll.votes[optId] || 0) + 1;
-  DB.savePolls(polls);
-
-  const voted = DB.voted;
-  voted[pollId] = optId;
-  DB.saveVoted(voted);
-
-  const total = Object.values(poll.votes).reduce((s, v) => s + v, 0);
-  const card  = document.getElementById('poll-card-' + pollId);
-  if (card) card.outerHTML = renderPollResults(poll, total, optId);
-
-  toast('Səsiniz qeydə alındı! 🗳️', 'success');
-}
-
 // ---------- IMPRESSION WIZARD ----------
 let _impTarget = null;
 let _impStep   = 1;
@@ -644,38 +420,62 @@ function markImpSeen(username) {
 function renderCharReport(containerId, username) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const imps   = DB.impressions.filter(i => i.to === username);
-  const total  = imps.length;
+  const imps  = DB.impressions.filter(i => i.to === username);
+  const total = imps.length;
 
   if (!total) {
-    container.innerHTML = `<p style="color:var(--text-light);font-size:13px;text-align:center;padding:16px 0">Hələ rəy yoxdur.</p>`;
+    container.innerHTML = `
+      <div class="char-empty">
+        <div class="char-empty-icon">🌟</div>
+        <p>Hələ rəy yoxdur</p>
+      </div>`;
     return;
   }
 
   const counts = {};
   imps.forEach(imp => imp.traits.forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const max    = sorted[0]?.[1] || 1;
+  const sorted  = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const maxCnt  = sorted[0][1];
+  const topKey  = sorted[0][0];
+  const topT    = TRAITS.find(t => t.key === topKey) || { emoji: '⭐', label: topKey };
+  const topPct  = Math.round(sorted[0][1] / total * 100);
 
-  const bars = sorted.map(([key, cnt]) => {
+  const bars = sorted.slice(0, 6).map(([key, cnt], i) => {
     const t   = TRAITS.find(t => t.key === key) || { emoji: '⭐', label: key };
     const pct = Math.round(cnt / total * 100);
+    const w   = Math.round(cnt / maxCnt * 100);
     return `
       <div class="char-row">
-        <div class="char-row-label">
-          <span>${t.emoji} ${t.label}</span>
-          <span class="char-row-pct">${pct}%</span>
+        <span class="char-row-emoji">${t.emoji}</span>
+        <span class="char-row-label">${t.label}</span>
+        <div class="char-bar-track">
+          <div class="char-bar-fill" style="width:${w}%;transition-delay:${i * 60}ms"></div>
         </div>
-        <div class="poll-bar-track">
-          <div class="poll-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div>
-        </div>
+        <span class="char-row-count">${pct}%</span>
       </div>`;
+  }).join('');
+
+  const extraBadges = sorted.slice(6).map(([key]) => {
+    const t = TRAITS.find(t => t.key === key) || { emoji: '⭐', label: key };
+    return `<span class="char-extra-badge">${t.emoji} ${t.label}</span>`;
   }).join('');
 
   container.innerHTML = `
     <div class="char-report-wrap">
-      <p class="char-report-sub">${total} nəfər rəy bildirdi</p>
-      ${bars}
+      <div class="char-hero">
+        <div class="char-hero-emoji">${topT.emoji}</div>
+        <div class="char-hero-body">
+          <div class="char-hero-label">${topT.label}</div>
+          <div class="char-hero-sub">Ən çox seçilən xüsusiyyət · ${topPct}%</div>
+        </div>
+        <div class="char-hero-badge">#1</div>
+      </div>
+      <div class="char-bars">${bars}</div>
+      ${extraBadges ? `<div class="char-extras">${extraBadges}</div>` : ''}
+      <div class="char-footer">
+        <span class="char-footer-icon">👁</span>
+        ${total} nəfər rəy bildirdi
+      </div>
     </div>`;
 }
 
@@ -731,7 +531,6 @@ function loadSendPage(username) {
 
   if (!user) return;
 
-  const userPolls   = DB.polls.filter(p => p.owner === username);
   const joinedDate  = new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'long', day: 'numeric' });
   const joinedShort = new Date(user.createdAt).toLocaleDateString('az-AZ', { year: 'numeric', month: 'short' });
 
@@ -740,16 +539,14 @@ function loadSendPage(username) {
   const editOverlay = document.getElementById('cover-edit-overlay');
   const session = DB.session;
   if (editOverlay) editOverlay.style.display = (session && session.username === username) ? 'flex' : 'none';
-  document.getElementById('send-name').textContent      = user.name;
-  document.getElementById('send-handle').textContent    = '@' + username;
-  document.getElementById('send-joined').textContent    = '📅 ' + joinedShort + ' tarixindən';
-  document.getElementById('send-poll-count').textContent = '🗳️ ' + userPolls.length + ' anket';
+  document.getElementById('send-name').textContent   = user.name;
+  document.getElementById('send-handle').textContent = '@' + username;
+  document.getElementById('send-joined').textContent = '📅 ' + joinedShort + ' tarixindən';
 
   // Sidebar
   document.getElementById('sidebar-name').textContent     = user.name;
   document.getElementById('sidebar-username').textContent = '@' + username;
   document.getElementById('sidebar-joined').textContent   = joinedDate;
-  document.getElementById('sidebar-polls').textContent    = userPolls.length + ' anket';
 
   // Form
   document.getElementById('send-target').value = username;
@@ -769,7 +566,6 @@ function loadSendPage(username) {
   const viewEl = document.getElementById('sidebar-views');
   if (viewEl) viewEl.textContent = viewCount + ' baxış';
 
-  renderSendPolls(username);
   renderCharReport('send-char-report', username);
 
   if (!isOwn && !DB.impSeen[username]) {
