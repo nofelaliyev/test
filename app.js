@@ -287,12 +287,12 @@ let deleteTargetId = null;
 
 function confirmDelete(id) {
   deleteTargetId = id;
-  document.getElementById('modal-delete').classList.add('open');
+  document.getElementById('modal-delete').style.display = 'flex';
 }
 
 function closeDeleteModal() {
   deleteTargetId = null;
-  document.getElementById('modal-delete').classList.remove('open');
+  document.getElementById('modal-delete').style.display = 'none';
 }
 
 function deleteMessage() {
@@ -318,11 +318,11 @@ function openEmojiModal() {
   grid.innerHTML = EMOJIS.map(e =>
     `<button class="emoji-btn" onclick="selectEmoji(this.textContent)">${e}</button>`
   ).join('');
-  document.getElementById('modal-emoji').classList.add('open');
+  document.getElementById('modal-emoji').style.display = 'flex';
 }
 
 function closeEmojiModal() {
-  document.getElementById('modal-emoji').classList.remove('open');
+  document.getElementById('modal-emoji').style.display = 'none';
 }
 
 function selectEmoji(emoji) {
