@@ -10,6 +10,7 @@ const DB = {
   get voted()       { return JSON.parse(localStorage.getItem('ss_voted') || '{}'); },
   get impressions() { return JSON.parse(localStorage.getItem('ss_impressions') || '[]'); },
   get impSeen()     { return JSON.parse(localStorage.getItem('ss_imp_seen') || '{}'); },
+  get views()       { return JSON.parse(localStorage.getItem('ss_views')    || '{}'); },
 
   saveUsers(u)       { localStorage.setItem('ss_users',       JSON.stringify(u)); },
   saveMessages(m)    { localStorage.setItem('ss_messages',    JSON.stringify(m)); },
@@ -19,6 +20,7 @@ const DB = {
   saveVoted(v)       { localStorage.setItem('ss_voted',       JSON.stringify(v)); },
   saveImpressions(i) { localStorage.setItem('ss_impressions', JSON.stringify(i)); },
   saveImpSeen(s)     { localStorage.setItem('ss_imp_seen',    JSON.stringify(s)); },
+  saveViews(v)       { localStorage.setItem('ss_views',       JSON.stringify(v)); },
 };
 
 const TRAITS = [
@@ -181,6 +183,8 @@ function loadDashboard() {
   document.getElementById('stat-total').textContent   = total;
   document.getElementById('stat-unread').textContent  = unread.length;
   document.getElementById('stat-today').textContent   = todayCount(messages);
+  const viewCount = DB.views[session.username] || 0;
+  document.getElementById('stat-views').textContent   = viewCount;
 
   const link = location.origin + location.pathname + '#u/' + session.username;
   document.getElementById('share-link').textContent = link;
@@ -192,6 +196,7 @@ function loadDashboard() {
 
   renderPolls();
   renderDashboardImpressions();
+  renderLeaderboard();
   renderMessages('all');
   updateBadge(unread.length);
 }
@@ -751,10 +756,22 @@ function loadSendPage(username) {
   document.getElementById('send-text').value   = '';
   document.getElementById('send-charcount').textContent = '0 / 500';
 
+  const isOwn = session && session.username === username;
+
+  // Increment profile view count (not for own profile)
+  if (!isOwn) {
+    const views = DB.views;
+    views[username] = (views[username] || 0) + 1;
+    DB.saveViews(views);
+  }
+
+  const viewCount = DB.views[username] || 0;
+  const viewEl = document.getElementById('sidebar-views');
+  if (viewEl) viewEl.textContent = viewCount + ' baxış';
+
   renderSendPolls(username);
   renderCharReport('send-char-report', username);
 
-  const isOwn = session && session.username === username;
   if (!isOwn && !DB.impSeen[username]) {
     openImpressionWizard(username, user);
   }
@@ -797,6 +814,44 @@ function sendMessage() {
     document.getElementById('send-form-area').style.display = 'block';
     document.getElementById('send-success').style.display   = 'none';
   }, 3000);
+}
+
+// ---------- LEADERBOARD ----------
+function renderLeaderboard() {
+  const container = document.getElementById('leaderboard-container');
+  if (!container) return;
+
+  const users    = DB.users;
+  const messages = DB.messages;
+
+  const scores = Object.keys(users).map(username => {
+    const msgCount  = messages.filter(m => m.to === username).length;
+    const viewCount = DB.views[username] || 0;
+    return { username, name: users[username].name, emoji: users[username].emoji, msgCount, viewCount };
+  }).filter(u => u.msgCount > 0)
+    .sort((a, b) => b.msgCount - a.msgCount)
+    .slice(0, 10);
+
+  if (!scores.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:24px 0"><div class="empty-icon">🏆</div><p>Hələ mesaj yoxdur.</p></div>`;
+    return;
+  }
+
+  const medals = ['🥇', '🥈', '🥉'];
+  container.innerHTML = scores.map((u, i) => `
+    <div class="lb-row">
+      <span class="lb-rank">${medals[i] || (i + 1)}</span>
+      <span class="lb-avatar">${u.emoji || u.name[0].toUpperCase()}</span>
+      <div class="lb-info">
+        <span class="lb-name">${escHtml(u.name)}</span>
+        <span class="lb-handle">@${escHtml(u.username)}</span>
+      </div>
+      <div class="lb-stats">
+        <span class="lb-stat">💬 ${u.msgCount}</span>
+        <span class="lb-stat">👁 ${u.viewCount}</span>
+      </div>
+      <a href="#u/${escHtml(u.username)}" class="btn btn-sm btn-outline">Profil</a>
+    </div>`).join('');
 }
 
 // ---------- SEARCH ----------
