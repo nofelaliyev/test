@@ -305,10 +305,18 @@ function deleteMessage() {
 }
 
 // ---------- EMOJI PICKER ----------
+const EMOJIS = [
+  '😀','😄','😎','🥳','🤩','😍','🥰','🤔','😴','🥸','🤓','🧐',
+  '👽','👾','🤖','💀','🎭','🦄','🐱','🐶','🦊','🐻','🐼','🐨',
+  '🦁','🐯','🐸','🐵','🐧','🦋','🐙','🦈','🦉','🦚','🦜','🦝',
+  '🌙','⭐','🌈','🔥','💎','⚡','🌊','🍀','🌸','🌺','🌻','🌴',
+  '🍁','🎃','🎄','🎯','🚀','🎨','🎵','🎮','🏆','💫','🌀','❄️',
+];
+
 function openEmojiModal() {
-  const grid = document.querySelector('.emoji-grid');
-  grid.innerHTML = grid.textContent.trim().split(/\s+/).map(e =>
-    `<button class="emoji-btn" onclick="selectEmoji('${e}')">${e}</button>`
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-btn" onclick="selectEmoji(this.textContent)">${e}</button>`
   ).join('');
   document.getElementById('modal-emoji').classList.add('open');
 }
@@ -323,7 +331,13 @@ function selectEmoji(emoji) {
   users[session.username].emoji = emoji;
   DB.saveUsers(users);
   closeEmojiModal();
-  loadDashboard();
+
+  // Update whichever avatar is currently visible
+  const dbAv = document.getElementById('db-avatar');
+  if (dbAv) dbAv.textContent = emoji;
+  const sendAv = document.getElementById('send-avatar');
+  if (sendAv) sendAv.textContent = emoji;
+
   updateNavbar();
   toast('Profil emojisi yeniləndi ' + emoji, 'success');
 }
