@@ -42,7 +42,20 @@ const TRAITS = [
   { key: 'ağıllı',       emoji: '🎯', label: 'Ağıllı'        },
 ];
 
-// ---------- AVATAR HELPER ----------
+const MOODS = [
+  { key: 'energetic', emoji: '🔥', label: 'Enerjili',   from: '#f97316', to: '#ef4444' },
+  { key: 'chill',     emoji: '😎', label: 'Sakit',      from: '#06b6d4', to: '#3b82f6' },
+  { key: 'dreamy',    emoji: '💭', label: 'Xəyallı',    from: '#a855f7', to: '#ec4899' },
+  { key: 'sleepy',    emoji: '😴', label: 'Yuxulu',     from: '#64748b', to: '#475569' },
+  { key: 'happy',     emoji: '😄', label: 'Şən',        from: '#f59e0b', to: '#22c55e' },
+  { key: 'sad',       emoji: '😔', label: 'Kədərli',    from: '#4f46e5', to: '#7c3aed' },
+  { key: 'creative',  emoji: '🎨', label: 'Yaradıcı',   from: '#10b981', to: '#06b6d4' },
+  { key: 'inlove',    emoji: '🥰', label: 'Sevimli',    from: '#ec4899', to: '#f43f5e' },
+  { key: 'rainbow',   emoji: '🌈', label: 'Rəngarəng',  from: '#8b5cf6', to: '#06b6d4' },
+  { key: 'cold',      emoji: '❄️', label: 'Soyuq',      from: '#0ea5e9', to: '#6366f1' },
+];
+
+
 function userAvatar(user) {
   return user.emoji || (user.name ? user.name[0].toUpperCase() : '?');
 }
@@ -195,6 +208,7 @@ function loadDashboard() {
   if (si) si.value = '';
   if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
 
+  renderMoodPicker();
   renderDashboardImpressions();
   renderLeaderboard();
   renderMessages('all');
@@ -302,6 +316,35 @@ function deleteMessage() {
   closeDeleteModal();
   loadDashboard();
   toast('Mesaj silindi');
+}
+
+// ---------- MOOD ----------
+function renderMoodPicker() {
+  const container = document.getElementById('mood-picker');
+  if (!container) return;
+  const session  = DB.session;
+  const me       = DB.users[session.username] || {};
+  const current  = me.mood || null;
+
+  container.innerHTML = MOODS.map(m => `
+    <button
+      class="mood-btn${current === m.key ? ' active' : ''}"
+      style="${current === m.key ? `background:linear-gradient(135deg,${m.from},${m.to});border-color:transparent;color:#fff` : ''}"
+      onclick="setMood('${m.key}')"
+      title="${m.label}"
+    >
+      <span class="mood-btn-emoji">${m.emoji}</span>
+      <span class="mood-btn-label">${m.label}</span>
+    </button>`).join('');
+}
+
+function setMood(key) {
+  const session = DB.session;
+  const users   = DB.users;
+  users[session.username].mood = (users[session.username].mood === key) ? null : key;
+  DB.saveUsers(users);
+  renderMoodPicker();
+  toast('Əhvalın yeniləndi!', 'success');
 }
 
 // ---------- EMOJI PICKER ----------
@@ -556,6 +599,20 @@ function loadSendPage(username) {
   document.getElementById('send-name').textContent   = user.name;
   document.getElementById('send-handle').textContent = '@' + username;
   document.getElementById('send-joined').textContent = '📅 ' + joinedShort + ' tarixindən';
+
+  // Apply mood
+  const mood     = user.mood ? MOODS.find(m => m.key === user.mood) : null;
+  const cover    = document.querySelector('.profile-cover');
+  if (cover) {
+    cover.style.background = mood
+      ? `linear-gradient(135deg, ${mood.from}, ${mood.to})`
+      : 'linear-gradient(135deg, var(--primary), var(--secondary))';
+  }
+  const moodBadge = document.getElementById('send-mood-badge');
+  if (moodBadge) {
+    moodBadge.textContent = mood ? `${mood.emoji} ${mood.label}` : '';
+    moodBadge.style.display = mood ? 'inline-flex' : 'none';
+  }
 
   // Sidebar
   document.getElementById('sidebar-name').textContent     = user.name;
