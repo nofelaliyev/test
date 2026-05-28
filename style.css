@@ -1641,6 +1641,152 @@ body {
   padding: 20px 0;
 }
 
+/* ---- REPLY SYSTEM ---- */
+.msg-reply-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.reply-open-btn {
+  color: var(--primary);
+  border-color: var(--primary);
+  font-size: 12px;
+}
+
+.msg-reply-show {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.msg-reply-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.msg-reply-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  background: rgba(108,99,255,0.06);
+  border-left: 3px solid var(--primary);
+  padding: 6px 10px;
+  border-radius: 0 8px 8px 0;
+  margin-top: 4px;
+}
+
+.msg-reply-input { margin-top: 10px; }
+
+.msg-reply-ta {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 72px;
+  transition: border-color 0.2s;
+}
+
+.msg-reply-ta:focus { border-color: var(--primary); }
+
+.msg-reply-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* locked reply cards on profile page */
+.reply-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: box-shadow 0.15s;
+}
+
+.reply-card:hover { box-shadow: 0 4px 16px rgba(108,99,255,0.1); }
+
+.reply-card-q {
+  font-size: 13px;
+  color: var(--text-light);
+  font-style: italic;
+  margin-bottom: 10px;
+  padding-left: 10px;
+  border-left: 2.5px solid var(--border);
+  line-height: 1.4;
+}
+
+.reply-card-a {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.reply-a-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+.reply-lock-wrap { position: relative; }
+
+.reply-card-a.blurred {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  min-height: 36px;
+  background: rgba(108,99,255,0.05);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.reply-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(255,101,132,0.06));
+  border: 1.5px dashed rgba(108,99,255,0.4);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reply-lock-overlay:hover {
+  background: linear-gradient(135deg, rgba(108,99,255,0.14), rgba(255,101,132,0.10));
+}
+
+.reply-lock-icon { font-size: 18px; }
+
+.reply-lock-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.reply-card.unlocked .reply-card-a {
+  background: rgba(108,99,255,0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  animation: replyReveal 0.5s ease;
+}
+
+@keyframes replyReveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ---- MOOD ---- */
 .mood-section {
   background: var(--card);

@@ -11,6 +11,7 @@ const DB = {
   get impressions() { return JSON.parse(localStorage.getItem('ss_impressions') || '[]'); },
   get impSeen()     { return JSON.parse(localStorage.getItem('ss_imp_seen') || '{}'); },
   get views()       { return JSON.parse(localStorage.getItem('ss_views')    || '{}'); },
+  get sent()        { return JSON.parse(localStorage.getItem('ss_sent')     || '{}'); },
 
   saveUsers(u)       { localStorage.setItem('ss_users',       JSON.stringify(u)); },
   saveMessages(m)    { localStorage.setItem('ss_messages',    JSON.stringify(m)); },
@@ -21,6 +22,7 @@ const DB = {
   saveImpressions(i) { localStorage.setItem('ss_impressions', JSON.stringify(i)); },
   saveImpSeen(s)     { localStorage.setItem('ss_imp_seen',    JSON.stringify(s)); },
   saveViews(v)       { localStorage.setItem('ss_views',       JSON.stringify(v)); },
+  saveSent(s)        { localStorage.setItem('ss_sent',        JSON.stringify(s)); },
 };
 
 const TRAITS = [
@@ -265,6 +267,15 @@ function renderMessages(filter) {
   filtered.forEach(msg => {
     const div = document.createElement('div');
     div.className = 'message-card' + (msg.read ? '' : ' unread');
+
+    const replyShow = msg.reply
+      ? `<div class="msg-reply-show">
+           <span class="msg-reply-label">📤 Cavabınız:</span>
+           <div class="msg-reply-text">${escHtml(msg.reply.text)}</div>
+           <button class="btn btn-sm btn-ghost" style="margin-top:4px" onclick="openReply('${msg.id}')">✏️ Dəyiş</button>
+         </div>`
+      : `<button class="btn btn-sm reply-open-btn" onclick="openReply('${msg.id}')">💬 Cavab yaz</button>`;
+
     div.innerHTML = `
       <div class="message-text">${escHtml(msg.text)}</div>
       <div class="message-meta">
@@ -273,9 +284,92 @@ function renderMessages(filter) {
           ${!msg.read ? `<button class="btn btn-sm btn-outline" onclick="markRead('${msg.id}')">Oxundu işarələ</button>` : ''}
           <button class="btn btn-sm btn-ghost" onclick="confirmDelete('${msg.id}')">Sil</button>
         </div>
+      </div>
+      <div class="msg-reply-section">
+        ${replyShow}
+        <div class="msg-reply-input" id="reply-input-${msg.id}" style="display:none">
+          <textarea id="reply-ta-${msg.id}" class="msg-reply-ta" placeholder="Cavabınızı yazın... (maks 300 simvol)" maxlength="300"></textarea>
+          <div class="msg-reply-btns">
+            <button class="btn btn-primary btn-sm" onclick="saveReply('${msg.id}')">✓ Saxla</button>
+            <button class="btn btn-ghost btn-sm" onclick="closeReply('${msg.id}')">Ləğv et</button>
+          </div>
+        </div>
       </div>`;
     container.appendChild(div);
   });
+}
+
+function openReply(id) {
+  const input = document.getElementById('reply-input-' + id);
+  if (!input) return;
+  const msg = DB.messages.find(m => m.id === id);
+  const ta  = document.getElementById('reply-ta-' + id);
+  if (ta && msg?.reply) ta.value = msg.reply.text;
+  input.style.display = 'block';
+  ta?.focus();
+}
+
+function closeReply(id) {
+  const input = document.getElementById('reply-input-' + id);
+  if (input) input.style.display = 'none';
+}
+
+function saveReply(id) {
+  const ta   = document.getElementById('reply-ta-' + id);
+  const text = ta?.value.trim();
+  if (!text) { toast('Cavab boş ola bilməz', 'error'); return; }
+
+  const messages = DB.messages;
+  const msg      = messages.find(m => m.id === id);
+  if (!msg) return;
+
+  msg.reply = { text, createdAt: new Date().toISOString() };
+  DB.saveMessages(messages);
+
+  const filter = document.querySelector('.filter-tab.active')?.dataset.filter || 'all';
+  renderMessages(filter);
+  toast('Cavab saxlanıldı! Ziyarətçilər görəcək 🔒', 'success');
+}
+
+function renderLockedReplies(username) {
+  const wrap = document.getElementById('send-replies-wrap');
+  if (!wrap) return;
+
+  const replied = DB.messages
+    .filter(m => m.to === username && m.reply)
+    .sort((a, b) => new Date(b.reply.createdAt) - new Date(a.reply.createdAt))
+    .slice(0, 6);
+
+  if (!replied.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  const session  = DB.session;
+  const isOwn    = session && session.username === username;
+  const unlocked = isOwn || !!DB.sent[username];
+
+  document.getElementById('send-replies').innerHTML = replied.map(msg => {
+    if (unlocked) {
+      return `
+        <div class="reply-card unlocked">
+          <div class="reply-card-q">"${escHtml(msg.text)}"</div>
+          <div class="reply-card-a">
+            <span class="reply-a-icon">💬</span>
+            <span>${escHtml(msg.reply.text)}</span>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="reply-card locked">
+        <div class="reply-card-q">"${escHtml(msg.text)}"</div>
+        <div class="reply-lock-wrap">
+          <div class="reply-card-a blurred" aria-hidden="true">${escHtml(msg.reply.text)}</div>
+          <div class="reply-lock-overlay" onclick="document.getElementById('send-text').focus();document.getElementById('send-text').scrollIntoView({behavior:'smooth'})">
+            <span class="reply-lock-icon">🔓</span>
+            <span class="reply-lock-text">Oxumaq üçün sual göndər</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function markRead(id) {
@@ -637,6 +731,7 @@ function loadSendPage(username) {
   const viewEl = document.getElementById('sidebar-views');
   if (viewEl) viewEl.textContent = viewCount + ' baxış';
 
+  renderLockedReplies(username);
   renderCharReport('send-char-report', username);
 
   if (!isOwn && !DB.impSeen[username]) {
@@ -671,6 +766,11 @@ function sendMessage() {
   });
   DB.saveMessages(messages);
 
+  // Mark as sent so locked replies unlock for this visitor
+  const sent = DB.sent;
+  sent[to] = true;
+  DB.saveSent(sent);
+
   document.getElementById('send-text').value = '';
   document.getElementById('send-charcount').textContent = '0 / 500';
 
@@ -680,6 +780,7 @@ function sendMessage() {
   setTimeout(() => {
     document.getElementById('send-form-area').style.display = 'block';
     document.getElementById('send-success').style.display   = 'none';
+    renderLockedReplies(to);
   }, 3000);
 }
 
